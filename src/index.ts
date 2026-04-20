@@ -2,7 +2,7 @@ import { clone_board, get_entity_from_coord, put_entity_at_coord_and_also_adjust
 import { play_piece_phase } from "./piece_phase";
 import { Board, GameEnd, Move, PiecePhasePlayed, ResolvedGameState, StonePhasePlayed } from "./type"
 import { Coordinate, displayCoord } from "./coordinate";
-import { resolve_after_stone_phase } from "./after_stone_phase";
+import { resolve_after_stone_phase, remove_surrounded_enitities_from_board_and_add_to_hand_if_necessary } from "./after_stone_phase";
 import { opponentOf, Side } from "./side";
 import { remove_surrounded } from "./surround";
 
@@ -152,6 +152,10 @@ export function can_place_stone(board: Readonly<Board>, side: Side, stone_to: Co
 
 function one_turn(old: ResolvedGameState, move: Move): ResolvedGameState | GameEnd {
     const after_piece_phase = play_piece_phase(old, move.piece_phase);
+
+    // 公式ルール：駒フェイズの後、すぐに相手の囲まれた駒・石を除去する（自分の駒は除去されない）。
+    // 「石フェイズを指す前に相手の石/駒を囲んで取る」ケースがあるため、石フェイズ前にここで除去しておく。
+    remove_surrounded_enitities_from_board_and_add_to_hand_if_necessary(after_piece_phase, opponentOf(after_piece_phase.by_whom));
 
     const after_stone_phase: StonePhasePlayed = move.stone_to ? place_stone(after_piece_phase, move.piece_phase.side, move.stone_to) : {
         phase: "stone_phase_played",

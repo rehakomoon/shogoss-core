@@ -2,7 +2,7 @@ import { delete_en_passant_flag, lookup_coords_from_side_and_prof } from "./boar
 import { ShogiColumnName } from "./coordinate";
 import { opponentOf, Side } from "./side";
 import { remove_surrounded } from "./surround";
-import { Board, Entity, GameEnd, ResolvedGameState, StonePhasePlayed, unpromote } from "./type";
+import { Board, Entity, GameEnd, Hand, ResolvedGameState, StonePhasePlayed, unpromote } from "./type";
 
 /** 石フェイズが終了した後、勝敗判定と囲碁検査をする。 / To be called after a stone is placed: checks the victory condition and the game-of-go condition.
  * また、相手のポ兵にアンパッサンフラグがついていたら、それを取り除く（自分が手を指したことによって、アンパッサンの権利が失われたので） 
@@ -109,7 +109,9 @@ function king_is_alive(board: Readonly<Board>, side: Side) {
     return lookup_coords_from_side_and_prof(board, side, "キ").length + lookup_coords_from_side_and_prof(board, side, "超").length > 0;
 }
 
-function remove_surrounded_enitities_from_board_and_add_to_hand_if_necessary(old: StonePhasePlayed, side: Side): void {
+type HasBoardAndHands = { board: Board, hand_of_black: Hand, hand_of_white: Hand };
+
+export function remove_surrounded_enitities_from_board_and_add_to_hand_if_necessary(old: HasBoardAndHands, side: Side): void {
     const black_and_white: (Side | null)[][] = old.board.map(row => row.map(sq => sq === null ? null : sq.side));
     const has_survived = remove_surrounded(side, black_and_white);
 
@@ -122,7 +124,7 @@ function remove_surrounded_enitities_from_board_and_add_to_hand_if_necessary(old
     }));
 }
 
-function send_captured_entity_to_opponent(old: StonePhasePlayed, captured_entity: Entity | null): void {
+function send_captured_entity_to_opponent(old: HasBoardAndHands, captured_entity: Entity | null): void {
     if (!captured_entity) return;
     const opponent = opponentOf(captured_entity.side);
     if (captured_entity.type === "しょ") {
